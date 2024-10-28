@@ -35,9 +35,7 @@ struct board_tile {
 /////////////////////////////  FUNCTION PROTOTYPES  ////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// TODO: Your function prototypes here
-
-// Prints out the current state of the board.
+void init_board(struct board_tile board[SIZE][SIZE]);
 void print_board(struct board_tile board[SIZE][SIZE]);
 char type_to_char(enum tile_type type);
 
@@ -50,11 +48,13 @@ int main(void) {
     printf("Welcome to Frogger Game!\n");
     struct board_tile game_board[SIZE][SIZE];
 
-    // TODO (Stage 1.1) Initialise the gameboard.
-    
+    // Initialise the gameboard.
+    init_board(game_board);
+
     // Read user input and place turtles.
     printf("How many turtles? ");
     // TODO (Stage 1.2): Scan in the turtles, and place them on the map.
+    printf("Enter pairs:\n");
 
     // Start the game and print out the gameboard.
     printf("Game Started\n");
@@ -63,7 +63,7 @@ int main(void) {
     printf("Enter command: ");
     // TODO (Stage 1.3): Create a command loop, to read and execute commands!
 
-    printf("Thank you for playing Frogger Game!\n");
+    printf("\nThank you for playing Frogger Game!\n");
     return 0;
 }
 
@@ -71,8 +71,32 @@ int main(void) {
 ///////////////////////////// ADDITIONAL FUNCTIONS /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// TODO: Add more functions here!
-
+void init_board(struct board_tile board[SIZE][SIZE]) {
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            // first row
+            if (i == 0 && j % 2 == 0) {
+                board[i][j].occupied = 0;
+                board[i][j].type = LILLYPAD;
+            }
+            // last row print bank or frog
+            else if (i == SIZE - 1) {
+                // middle print frog, else bank
+                if (j == (SIZE / 2)) {
+                    board[i][j].occupied = 1;
+                } else {
+                    board[i][j].occupied = 0;
+                    board[i][j].type = BANK;
+                }
+            }
+            // print water
+            else {
+                board[i][j].occupied = 0;
+                board[i][j].type = WATER;
+            }
+        }
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// PROVIDED FUNCTIONS //////////////////////////////
