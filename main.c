@@ -12,9 +12,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Provided constants
-#define SIZE        9
-#define TRUE        1
-#define FALSE       0
+#define SIZE         9
+#define TRUE         1
+#define FALSE        0
+#define LILLYPAD_ROW 0
+#define BANK_ROW     (SIZE - 1)
+#define LEFT_COLUMN  0
+#define RIGHT_COLUMN (SIZE - 1)
 
 // TODO: you may choose to add additional #defines here.
 
@@ -78,8 +82,8 @@ void place_turtles(struct board_tile board[SIZE][SIZE]) {
     while (turtleCount > 0) {
         int row = -1, column = -1;
         scanf("%d %d", &row, &column);
-        if (row >= 1 && row < SIZE - 1
-            && column >= 0 && column < SIZE - 0
+        if (row > LILLYPAD_ROW && row < BANK_ROW
+            && column >= LEFT_COLUMN && column <= RIGHT_COLUMN
         ) {
             board[row][column].occupied = 0;
             board[row][column].type = TURTLE;
