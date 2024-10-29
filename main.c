@@ -35,7 +35,7 @@ struct board_tile {
 /////////////////////////////  FUNCTION PROTOTYPES  ////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// TODO: Your function prototypes here
+void place_turtles(struct board_tile board[SIZE][SIZE]);
 
 // Prints out the current state of the board.
 void print_board(struct board_tile board[SIZE][SIZE]);
@@ -51,10 +51,9 @@ int main(void) {
     struct board_tile game_board[SIZE][SIZE];
 
     // TODO (Stage 1.1) Initialise the gameboard.
-    
+
     // Read user input and place turtles.
-    printf("How many turtles? ");
-    // TODO (Stage 1.2): Scan in the turtles, and place them on the map.
+    place_turtles(game_board);
 
     // Start the game and print out the gameboard.
     printf("Game Started\n");
@@ -71,8 +70,23 @@ int main(void) {
 ///////////////////////////// ADDITIONAL FUNCTIONS /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// TODO: Add more functions here!
-
+void place_turtles(struct board_tile board[SIZE][SIZE]) {
+    int turtleCount = 0;
+    printf("How many turtles? ");
+    scanf("%d", &turtleCount);
+    printf("Enter pairs:\n");
+    while (turtleCount > 0) {
+        int row = -1, column = -1;
+        scanf("%d %d", &row, &column);
+        if (row >= 1 && row < SIZE - 1
+            && column >= 0 && column < SIZE - 0
+        ) {
+            board[row][column].occupied = 0;
+            board[row][column].type = TURTLE;
+        }
+        turtleCount--;
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// PROVIDED FUNCTIONS //////////////////////////////
