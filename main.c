@@ -12,11 +12,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Provided constants
-#define SIZE        9
-#define TRUE        1
-#define FALSE       0
-
-// TODO: you may choose to add additional #defines here.
+#define SIZE         9
+#define TRUE         1
+#define FALSE        0
+#define LILLYPAD_ROW 0
+#define BANK_ROW     (SIZE - 1)
+#define LEFT_COLUMN  0
+#define RIGHT_COLUMN (SIZE - 1)
 
 // Provided Enums
 enum tile_type {LILLYPAD, BANK, WATER, TURTLE, LOG};
@@ -36,6 +38,8 @@ struct board_tile {
 ////////////////////////////////////////////////////////////////////////////////
 
 void init_board(struct board_tile board[SIZE][SIZE]);
+int is_placeable(int row, int col);
+void place_turtles(struct board_tile board[SIZE][SIZE]);
 void print_board(struct board_tile board[SIZE][SIZE]);
 char type_to_char(enum tile_type type);
 
@@ -48,8 +52,8 @@ int main(void) {
     printf("Welcome to Frogger Game!\n");
     struct board_tile game_board[SIZE][SIZE];
 
-    // Initialise the gameboard.
     init_board(game_board);
+    place_turtles(game_board);
 
     // Read user input and place turtles.
     printf("How many turtles? ");
@@ -96,6 +100,36 @@ void init_board(struct board_tile board[SIZE][SIZE]) {
             }
         }
     }
+}
+
+void place_turtles(struct board_tile board[SIZE][SIZE]) {
+    // Read user input and place turtles.
+    int num_turtles;
+    printf("How many turtles? ");
+    scanf("%d", &num_turtles);
+
+    // Scan in the turtles, and place them on the map.
+    int row, col;
+    for (int i = 0; i < num_turtles; i++) {
+        scanf("%d %d", &row, &col);
+
+        if (is_placeable(row, col) == TRUE) {
+            board[row][col].type = TURTLE;
+        }
+    }
+}
+
+/**
+ * Helper function to allow us easily check if certain item is placeable in the board.
+ * Assumption:
+ *  1. Lilly Pad Row are prohibited (destination row)
+ *  2. Bank Row are prohibited (starting row)
+ */
+int is_placeable(int row, int col) {
+    return row > LILLYPAD_ROW
+        && row < BANK_ROW
+        && col >= LEFT_COLUMN
+        && col <= RIGHT_COLUMN;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
