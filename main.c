@@ -78,15 +78,10 @@ void init_board(struct board_tile board[SIZE][SIZE]) {
                 board[i][j].occupied = 0;
                 board[i][j].type = LILLYPAD;
             }
-            // last row print bank or frog
+            // last row print bank and frog occupied middle
             else if (i == SIZE - 1) {
-                // middle print frog, else bank
-                if (j == (SIZE / 2)) {
-                    board[i][j].occupied = 1;
-                } else {
-                    board[i][j].occupied = 0;
-                    board[i][j].type = BANK;
-                }
+                board[i][j].occupied = j == (SIZE / 2);
+                board[i][j].type = BANK;
             }
             // print water
             else {
