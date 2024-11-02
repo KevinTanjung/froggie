@@ -1,9 +1,13 @@
-// Program name
+// Froggie
 //
-// This program was written by [your name] (NIM i.e. )
-// on [date]
+// This program was written by Kelompok 2:
+// - FRANCISCUS FEBY ETDOLO - 01085240013
+// - LEONARDUS KEVIN TANJUNG - 01085240011
+// - RINA RIDWAN MAMAHIT - 01087240002
+// - SERAFINA ALMASYAIR - 01087240001
+// - TRIANTO - 01085240015
 //
-// TODO: Description of program
+// on Semester Ganjil 2024
 
 #include <stdio.h>
 
@@ -21,6 +25,8 @@
 #define RIGHT_COLUMN (SIZE - 1)
 #define MIN(a,b)     ((a) < (b) ? (a) : (b))
 #define MAX(a,b)     ((a) > (b) ? (a) : (b))
+#define X            0
+#define Y            1
 
 // Provided Enums
 enum tile_type {LILLYPAD, BANK, WATER, TURTLE, LOG};
@@ -43,6 +49,9 @@ void init_board(struct board_tile board[SIZE][SIZE]);
 int is_placeable(int row, int col);
 void place_turtles(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
 void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
+void clear_row(struct board_tile board[SIZE][SIZE]);
+void remove_log(struct board_tile board[SIZE][SIZE]);
+void move_frogger(struct board_tile board[SIZE][SIZE], char command, int last_coordinate[2]);
 void print_board(struct board_tile board[SIZE][SIZE]);
 char type_to_char(enum tile_type type);
 
@@ -55,6 +64,9 @@ int main(void) {
     printf("Welcome to Frogger Game!\n");
     struct board_tile game_board[SIZE][SIZE];
     int turtle_row[SIZE] = {FALSE}; // dictionary to help us indicate if certain row has a turtle for O(1) lookup
+    int last_coordinate[2]; // (x, y)
+    last_coordinate[X] = BANK_ROW;
+    last_coordinate[Y] = SIZE / 2;
 
     init_board(game_board);
     place_turtles(game_board, turtle_row);
@@ -63,7 +75,10 @@ int main(void) {
 
     char command;
     while (1) {
-        printf("q = quit  |  l = add log\n");
+        printf("|--------------------------------------------------------------------|\n");
+        printf("| q = quit     |  l = add log    |  c = clear row  |  r = remove log |\n");
+        printf("| w = move up  |  a = move left  |  s = move down  |  d = move right |\n");
+        printf("|--------------------------------------------------------------------|\n");
         printf("Enter command: ");
         int result = scanf(" %c", &command);
         if (result == EOF || command == 'q') {
@@ -73,6 +88,18 @@ int main(void) {
         switch (command) {
             case 'l':
                 add_log(game_board, turtle_row);
+                break;
+            case 'c':
+                clear_row(game_board);
+                break;
+            case 'r':
+                remove_log(game_board);
+                break;
+            case 'a':
+            case 'w':
+            case 's':
+            case 'd':
+                move_frogger(game_board, command, last_coordinate);
                 break;
             default:
                 printf("Invalid command!\n");
@@ -166,6 +193,23 @@ void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]) {
             board[row][col].type = LOG;
         }
     }
+}
+
+void clear_row(struct board_tile board[SIZE][SIZE]) {
+    printf("// TODO clear_row [row]\n");
+}
+
+void remove_log(struct board_tile board[SIZE][SIZE]) {
+    printf("// TODO remove_log [row] [column]\n");
+}
+
+void move_frogger(
+    struct board_tile board[SIZE][SIZE],
+    char command,
+    int last_coordinate[2]
+) {
+    printf("// TODO move_frogger [%c]\n", command);
+    // TODO
 }
 
 ////////////////////////////////////////////////////////////////////////////////
