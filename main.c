@@ -49,8 +49,8 @@ void init_board(struct board_tile board[SIZE][SIZE]);
 int is_placeable(int row, int col);
 void place_turtles(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
 void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
-void clear_row(struct board_tile board[SIZE][SIZE]);
-void remove_log(struct board_tile board[SIZE][SIZE]);
+void clear_row(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
+void remove_log(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 void move_frogger(struct board_tile board[SIZE][SIZE], char command, int last_coordinate[2]);
 void print_board(struct board_tile board[SIZE][SIZE]);
 char type_to_char(enum tile_type type);
@@ -90,10 +90,10 @@ int main(void) {
                 add_log(game_board, turtle_row);
                 break;
             case 'c':
-                clear_row(game_board);
+                clear_row(game_board, last_coordinate);
                 break;
             case 'r':
-                remove_log(game_board);
+                remove_log(game_board, last_coordinate);
                 break;
             case 'a':
             case 'w':
@@ -195,11 +195,47 @@ void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]) {
     }
 }
 
-void clear_row(struct board_tile board[SIZE][SIZE]) {
-    printf("// TODO clear_row [row]\n");
+void clear_row(
+    struct board_tile board[SIZE][SIZE],
+    int last_coordinate[2]
+) {
+    int row;
+    printf("Enter row to clear: ");
+    scanf("%d", &row);
+
+    // Check if row is out of bounds
+    if (row < 0 || row >= SIZE) {
+        printf("Error: Row %d is out of bounds.\n", row);
+        return;
+    }
+
+    // Check if row is prohibited (LILLYPAD or BANK row)
+    if (row == LILLYPAD_ROW || row == BANK_ROW) {
+        printf("Error: Cannot clear the Lilypad or Bank row.\n");
+        return;
+    }
+
+    // Check if Frogger is on the row
+    for (int col = 0; col < SIZE; col++) {
+        if (board[row][col].occupied == TRUE) {
+            printf("Error: Cannot clear row %d because Frogger is present.\n", row);
+            return;
+        }
+    }
+
+    // Clear the row by setting all tiles to WATER
+    for (int col = 0; col < SIZE; col++) {
+        if (board[row][col].type == TURTLE || board[row][col].type == LOG) {
+            board[row][col].type = WATER;
+        }
+    }
+    printf("Row %d cleared.\n", row);
 }
 
-void remove_log(struct board_tile board[SIZE][SIZE]) {
+void remove_log(
+    struct board_tile board[SIZE][SIZE],
+    int last_coordinate[2]
+) {
     printf("// TODO remove_log [row] [column]\n");
 }
 
