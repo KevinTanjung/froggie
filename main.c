@@ -49,8 +49,8 @@ void init_board(struct board_tile board[SIZE][SIZE]);
 int is_placeable(int row, int col);
 void place_turtles(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
 void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
-void clear_row(struct board_tile board[SIZE][SIZE]);
-void remove_log(struct board_tile board[SIZE][SIZE]);
+void clear_row(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
+void remove_log(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 void move_frogger(struct board_tile board[SIZE][SIZE], char command, int last_coordinate[2]);
 void print_board(struct board_tile board[SIZE][SIZE]);
 char type_to_char(enum tile_type type);
@@ -90,10 +90,10 @@ int main(void) {
                 add_log(game_board, turtle_row);
                 break;
             case 'c':
-                clear_row(game_board);
+                clear_row(game_board, last_coordinate);
                 break;
             case 'r':
-                remove_log(game_board);
+                remove_log(game_board, last_coordinate);
                 break;
             case 'a':
             case 'w':
@@ -195,11 +195,17 @@ void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]) {
     }
 }
 
-void clear_row(struct board_tile board[SIZE][SIZE]) {
+void clear_row(
+    struct board_tile board[SIZE][SIZE],
+    int last_coordinate[2]
+) {
     printf("// TODO clear_row [row]\n");
 }
 
-void remove_log(struct board_tile board[SIZE][SIZE]) {
+void remove_log(
+    struct board_tile board[SIZE][SIZE],
+    int last_coordinate[2]
+) {
     printf("// TODO remove_log [row] [column]\n");
 }
 
