@@ -19,6 +19,8 @@
 #define BANK_ROW     (SIZE - 1)
 #define LEFT_COLUMN  0
 #define RIGHT_COLUMN (SIZE - 1)
+#define MIN(a,b)     ((a) < (b) ? (a) : (b))
+#define MAX(a,b)     ((a) > (b) ? (a) : (b))
 
 // Provided Enums
 enum tile_type {LILLYPAD, BANK, WATER, TURTLE, LOG};
@@ -39,7 +41,8 @@ struct board_tile {
 
 void init_board(struct board_tile board[SIZE][SIZE]);
 int is_placeable(int row, int col);
-void place_turtles(struct board_tile board[SIZE][SIZE]);
+void place_turtles(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
+void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
 void print_board(struct board_tile board[SIZE][SIZE]);
 char type_to_char(enum tile_type type);
 
@@ -51,16 +54,32 @@ int main(void) {
 
     printf("Welcome to Frogger Game!\n");
     struct board_tile game_board[SIZE][SIZE];
+    int turtle_row[SIZE] = {FALSE}; // dictionary to help us indicate if certain row has a turtle for O(1) lookup
 
     init_board(game_board);
-    place_turtles(game_board);
-
-    // Start the game and print out the gameboard.
+    place_turtles(game_board, turtle_row);
     printf("Game Started\n");
     print_board(game_board);
 
-    printf("Enter command: ");
-    // TODO (Stage 1.3): Create a command loop, to read and execute commands!
+    char command;
+    while (1) {
+        printf("q = quit  |  l = add log\n");
+        printf("Enter command: ");
+        int result = scanf(" %c", &command);
+        if (result == EOF || command == 'q') {
+            break;
+        }
+
+        switch (command) {
+            case 'l':
+                add_log(game_board, turtle_row);
+                break;
+            default:
+                printf("Invalid command!\n");
+                continue;
+        }
+        print_board(game_board);
+    }
 
     printf("\nThank you for playing Frogger Game!\n");
     return 0;
@@ -92,7 +111,7 @@ void init_board(struct board_tile board[SIZE][SIZE]) {
     }
 }
 
-void place_turtles(struct board_tile board[SIZE][SIZE]) {
+void place_turtles(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]) {
     // Read user input and place turtles.
     int num_turtles;
     printf("How many turtles? ");
@@ -105,6 +124,7 @@ void place_turtles(struct board_tile board[SIZE][SIZE]) {
 
         if (is_placeable(row, col) == TRUE) {
             board[row][col].type = TURTLE;
+            turtle_row[row] = TRUE;
         }
     }
 }
@@ -120,6 +140,32 @@ int is_placeable(int row, int col) {
         && row < BANK_ROW
         && col >= LEFT_COLUMN
         && col <= RIGHT_COLUMN;
+}
+
+void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]) {
+    int row, start_col, end_col = -1;
+    printf("Adding Log, input [row] [start_col] [end_col]: ");
+    scanf("%d %d %d", &row, &start_col, &end_col);
+
+    if (start_col > end_col) {
+        printf("Invalid input! [start_col] must be less or equal than [end_col]!\n");
+        return;
+    }
+
+    // since column range can be out of bounds, but log should still be placed
+    // we ensure the input is within bound using MAX and MIN
+    start_col = MAX(LEFT_COLUMN, start_col);
+    end_col = MIN(RIGHT_COLUMN, end_col);
+
+    // check if placable and is not occupied by turtle
+    if (is_placeable(row, start_col) == TRUE
+        && is_placeable(row, end_col) == TRUE
+        && turtle_row[row] == FALSE
+    ) {
+        for (int col = start_col; col <= end_col; col++) {
+            board[row][col].type = LOG;
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
