@@ -228,7 +228,44 @@ void remove_log(
     struct board_tile board[SIZE][SIZE],
     int last_coordinate[2]
 ) {
-    printf("// TODO remove_log [row] [column]\n");
+    int row, col;
+    printf ("To remove log(s), please input [row] [column]: ");
+    scanf ("%d %d", &row, &col);
+
+    //Looping to check if log tile is occupied by frogger. Log tile occupied by frogger will not be changed to water.
+    int i = 0;
+    while (i < SIZE) //Following the size of the board to check the whole row (adjacent possible logs to the left and right).
+    {
+        if (board[row][i].occupied) //Tile occupied by Frogger.
+        {
+            printf ("The log at row %d and column %d cannot be removed as Frogger is there.\n", row, col);
+            return; //Do nothing to the tile.
+        }
+        i++;
+    }
+
+    if (board[row][col].type != LOG) //Tile that is not log tile will not be changed.
+        {
+            printf("There is no log to remove at row %d and column %d.\n", row, col);
+            return;
+        }
+    else (board[row][col].type = WATER); //If it is a log tile, it will be changed to water.
+
+    int y = col + 1; //Looping to check if there are any log tiles to the right. If there are, change to water.
+    while ((y < SIZE) && board[row][y].type == LOG);
+    {
+        board[row][y].type = WATER;
+        y++;
+    }
+
+    int z = col - 1; //Looping to check if there are any log tiles to the left. If there are, change to water.
+    while ((z >= 0) && board[row][z].type == LOG);
+    {
+        board[row][z].type = WATER;
+        z--;
+    }
+
+    printf("Log(s) removed on row %d and column %d and any logs adjacent to it.\n", row, col);
 }
 
 void move_frogger(
