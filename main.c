@@ -52,6 +52,8 @@ void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
 void clear_row(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 void remove_log(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 void move_frogger(struct board_tile board[SIZE][SIZE], char command, int last_coordinate[2]);
+void occupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
+void unoccupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 void print_board(struct board_tile board[SIZE][SIZE]);
 char type_to_char(enum tile_type type);
 
@@ -275,7 +277,54 @@ void move_frogger(
     char command,
     int last_coordinate[2]
 ) {
-    printf("// TODO move_frogger [%c]\n", command);
+    // note: for better readability, we will separate win/lose condition from this function
+    // TODO: handle obstacle
+    switch (command) {
+        case 'w':
+            // moving up -> smaller X -> cannot be less than LILLYPAD_ROW
+            if (last_coordinate[X] - 1 >= LILLYPAD_ROW) {
+                unoccupy(board, last_coordinate);
+                last_coordinate[X]--;
+                occupy(board, last_coordinate);
+            }
+            break;
+        case 'a':
+            // moving left -> smaller Y -> cannot be less than LEFT_COLUMN
+            if (last_coordinate[Y] - 1 >= LEFT_COLUMN) {
+                unoccupy(board, last_coordinate);
+                last_coordinate[Y]--;
+                occupy(board, last_coordinate);
+            }
+            break;
+        case 's':
+            // moving down -> greater X -> cannot be greater than BANK_ROW
+            if (last_coordinate[X] + 1 <= BANK_ROW) {
+                unoccupy(board, last_coordinate);
+                last_coordinate[X]++;
+                occupy(board, last_coordinate);
+            }
+            break;
+        case 'd':
+            // moving right -> greater Y -> cannot be greater than RIGHT_COLUMN
+            if (last_coordinate[Y] + 1 <= RIGHT_COLUMN) {
+                unoccupy(board, last_coordinate);
+                last_coordinate[Y]++;
+                occupy(board, last_coordinate);
+            }
+            break;
+
+    default:
+        printf("Invalid move command: [%c]\n", command);
+        break;
+    }
+}
+
+void occupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]) {
+    board[last_coordinate[X]][last_coordinate[Y]].occupied = TRUE;
+}
+
+void unoccupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]) {
+    board[last_coordinate[X]][last_coordinate[Y]].occupied = FALSE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
