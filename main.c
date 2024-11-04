@@ -232,52 +232,42 @@ void remove_log(
     printf("To remove log(s), please input [row] [column]: ");
     scanf("%d %d", &row, &col);
 
-    if (board[row][col].type != LOG) //Tile that is not log tile will not be changed.
-        {
-            printf("There is no log to remove at row %d and column %d.\n", row, col);
-            return;
-        }
+    //Tile that is not log tile will not be changed.
+    if (board[row][col].type != LOG)  {
+        printf("There is no log to remove at row %d and column %d.\n", row, col);
+        return;
+    }
 
     //To check for Frogger.
-    int frogger_present = 0;
+    int frogger_present = FALSE;
 
     int z = col; //Looping to check if Frogger is present on the left.
-    while ((z >= LEFT_COLUMN) && board[row][z].type == LOG)
-    {
-        if(board[row][z].occupied)
-        {
-            frogger_present = 1; //if present, set frogger_present to 1.
+    while ((z >= LEFT_COLUMN) && board[row][z].type == LOG) {
+        if(board[row][z].occupied == TRUE) {
+            frogger_present = TRUE; //if present, set frogger_present to TRUE.
         }
         z--;
     }
 
     int y = col; //Looping to check if Frogger is present on the right.
-    while ((y <= RIGHT_COLUMN) && board[row][y].type == LOG)
-    {
-        if(board[row][y].occupied)
-        {
-            frogger_present = 1; //if present, set frogger_present to 1.
+    while ((y <= RIGHT_COLUMN) && board[row][y].type == LOG) {
+        if(board[row][y].occupied == TRUE) {
+            frogger_present = TRUE; //if present, set frogger_present to TRUE.
         }
         y++;
     }
 
     //To remove logs if Frogger is not present on any adjacent logs.
-
-    if (frogger_present == 1)
-    {
+    if (frogger_present == TRUE) {
         printf("Cannot remove logs as a Frogger is present on an adjacent log.\n");
-    }
-    else
-    {
+    } else {
         int removal = z;
-        while (removal <= y)
-        {
+        while (removal <= y) {
             board[row][removal].type = WATER;
             removal++;
         }
+        printf("Log(s) removed on row %d and column %d, and any logs adjacent to it.\n", row, col);
     }
-
-    printf("Log(s) removed on row %d and column %d, and any logs adjacent to it.\n", row, col);
 }
 
 void move_frogger(
