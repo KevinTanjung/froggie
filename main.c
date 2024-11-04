@@ -10,23 +10,26 @@
 // on Semester Ganjil 2024
 
 #include <stdio.h>
+#include <stdlib.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////  CONSTANTS  /////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 // Provided constants
-#define SIZE         9
-#define TRUE         1
-#define FALSE        0
-#define LILLYPAD_ROW 0
-#define BANK_ROW     (SIZE - 1)
-#define LEFT_COLUMN  0
-#define RIGHT_COLUMN (SIZE - 1)
-#define MIN(a,b)     ((a) < (b) ? (a) : (b))
-#define MAX(a,b)     ((a) > (b) ? (a) : (b))
-#define X            0
-#define Y            1
+#define SIZE          9
+#define TRUE          1
+#define FALSE         0
+#define LILLYPAD_ROW  0
+#define BANK_ROW      (SIZE - 1)
+#define LEFT_COLUMN   0
+#define RIGHT_COLUMN  (SIZE - 1)
+#define MIN(a,b)      ((a) < (b) ? (a) : (b))
+#define MAX(a,b)      ((a) > (b) ? (a) : (b))
+#define X             0
+#define Y             1
+#define DEFAULT_LIVES 3
+#define DEAD          0
 
 // Provided Enums
 enum tile_type {LILLYPAD, BANK, WATER, TURTLE, LOG};
@@ -37,8 +40,16 @@ enum tile_type {LILLYPAD, BANK, WATER, TURTLE, LOG};
 
 // Provided structs
 struct board_tile {
-    enum tile_type type; // The type of piece it is (water, bank, etc.)
-    int occupied;        // TRUE or FALSE based on if Frogger is there.
+    enum tile_type type;  // The type of piece it is (water, bank, etc.)
+    int occupied;         // TRUE or FALSE based on if Frogger is there.
+    struct bug_node* bug; // POINTER or NULL based on if Bug is there.
+};
+
+struct bug_node {
+    int row;
+    int col;
+    struct bug_node* prev;
+    struct bug_node* next;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -49,22 +60,29 @@ void init_board(struct board_tile board[SIZE][SIZE]);
 int is_placeable(int row, int col);
 void place_turtles(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
 void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
+void add_bug(struct board_tile board[SIZE][SIZE], struct bug_node** bug_linked_list);
 void clear_row(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 void remove_log(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 void move_frogger(struct board_tile board[SIZE][SIZE], char command, int last_coordinate[2]);
+void move_bug(struct board_tile board[SIZE][SIZE], struct bug_node* bug_linked_list);
 void occupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 void unoccupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
+int check_winning_condition(struct board_tile board[SIZE][SIZE], int last_coordinate[2], int lives);
+void reset_frogger(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 void print_board(struct board_tile board[SIZE][SIZE]);
 char type_to_char(enum tile_type type);
+struct bug_node* create_bug_node(struct bug_node** bug_linked_list, int x, int y);
+void remove_bug_node(struct bug_node** bug_linked_list, struct bug_node* to_be_removed);
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////  FUNCTION IMPLEMENTATIONS  //////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 int main(void) {
-
     printf("Welcome to Frogger Game!\n");
     struct board_tile game_board[SIZE][SIZE];
+    struct bug_node* bug_linked_list = NULL; // linked list to help us add/remove bug for easy traversal and lookup
+    int lives = DEFAULT_LIVES;
     int turtle_row[SIZE] = {FALSE}; // dictionary to help us indicate if certain row has a turtle for O(1) lookup
     int last_coordinate[2]; // (x, y)
     last_coordinate[X] = BANK_ROW;
@@ -79,6 +97,7 @@ int main(void) {
     while (1) {
         printf("|--------------------------------------------------------------------|\n");
         printf("| q = quit     |  l = add log    |  c = clear row  |  r = remove log |\n");
+        printf("| b = add bug  |                 |                 |                 |\n");
         printf("| w = move up  |  a = move left  |  s = move down  |  d = move right |\n");
         printf("|--------------------------------------------------------------------|\n");
         printf("Enter command: ");
@@ -97,11 +116,16 @@ int main(void) {
             case 'r':
                 remove_log(game_board, last_coordinate);
                 break;
+            case 'b':
+                add_bug(game_board, &bug_linked_list);
+                break;
             case 'a':
             case 'w':
             case 's':
             case 'd':
                 move_frogger(game_board, command, last_coordinate);
+                move_bug(game_board, bug_linked_list);
+                lives = check_winning_condition(game_board, last_coordinate, lives);
                 break;
             default:
                 printf("Invalid command!\n");
@@ -121,9 +145,11 @@ int main(void) {
 void init_board(struct board_tile board[SIZE][SIZE]) {
     for (int i = 0; i < SIZE; i++) {
         for (int j = 0; j < SIZE; j++) {
+            board[i][j].occupied = 0;
+            board[i][j].bug = NULL;
+
             // first row
             if (i == 0 && j % 2 == 0) {
-                board[i][j].occupied = 0;
                 board[i][j].type = LILLYPAD;
             }
             // last row print bank and frog occupied middle
@@ -133,7 +159,6 @@ void init_board(struct board_tile board[SIZE][SIZE]) {
             }
             // print water
             else {
-                board[i][j].occupied = 0;
                 board[i][j].type = WATER;
             }
         }
@@ -195,6 +220,14 @@ void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]) {
             board[row][col].type = LOG;
         }
     }
+}
+
+void add_bug(
+    struct board_tile board[SIZE][SIZE],
+    struct bug_node** bug_linked_list
+) {
+    // Hint: use create_bug_node() function and store the result in the board
+    printf("// TODO add_bug [row] [column]\n");
 }
 
 void clear_row(
@@ -277,8 +310,6 @@ void move_frogger(
     char command,
     int last_coordinate[2]
 ) {
-    // note: for better readability, we will separate win/lose condition from this function
-    // TODO: handle obstacle
     switch (command) {
         case 'w':
             // moving up -> smaller X -> cannot be less than LILLYPAD_ROW
@@ -319,12 +350,81 @@ void move_frogger(
     }
 }
 
+void move_bug(
+    struct board_tile board[SIZE][SIZE],
+    struct bug_node* bug_linked_list
+) {
+    printf("// TODO move_bug\n");
+    // Hint: use bug_linked_list to traverse over the list of bug
+}
+
 void occupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]) {
     board[last_coordinate[X]][last_coordinate[Y]].occupied = TRUE;
 }
 
 void unoccupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]) {
     board[last_coordinate[X]][last_coordinate[Y]].occupied = FALSE;
+}
+
+int check_winning_condition(
+    struct board_tile board[SIZE][SIZE],
+    int last_coordinate[2],
+    int lives
+) {
+    // Hint: return the updated lives count
+    return lives;
+}
+
+void reset_frogger(struct board_tile board[SIZE][SIZE], int last_coordinate[2]) {
+    board[last_coordinate[X]][last_coordinate[Y]].occupied = FALSE;
+    last_coordinate[X] = BANK_ROW;
+    last_coordinate[Y] = SIZE / 2;
+    board[last_coordinate[X]][last_coordinate[Y]].occupied = TRUE;
+}
+
+/**
+ * This function acts as a helper to hide the complexity of how we can add a
+ * bug into the first item of the linked list.
+ *
+ * Linked List is a list data structure that allows easier addition/removal of item
+ * into the list, since array needs to have a predetermined length, and removal might
+ * introduce gap in the list.
+ */
+struct bug_node* create_bug_node(struct bug_node** bug_linked_list, int row, int col) {
+    struct bug_node* bug = (struct bug_node*) malloc(sizeof(struct bug_node));
+    if (bug == NULL) {
+        printf("Memory allocation failed.\n");
+        exit(1);
+    }
+    bug->row = row;
+    bug->col = col;
+    bug->next = *bug_linked_list;
+    bug->prev = NULL;
+    if (*bug_linked_list != NULL) {
+        (*bug_linked_list)->prev = bug;
+    }
+    *bug_linked_list = bug;
+    return bug;
+}
+
+/**
+ * This function acts as a helper to hide the complexity of how we can remove
+ * a certain bug from the linked list.
+ */
+void remove_bug_node(
+    struct bug_node** bug_linked_list,
+    struct bug_node* removed
+) {
+    if (removed == *bug_linked_list) {
+        *bug_linked_list = removed->next;
+    }
+    if (removed->prev != NULL) {
+        removed->prev->next = removed->next;
+    }
+    if (removed->next != NULL) {
+        removed->next->prev = removed->prev;
+    }
+    free(removed);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -337,6 +437,8 @@ void print_board(struct board_tile board[SIZE][SIZE]) {
             char type_char = '\0';
             if (board[row][col].occupied) {
                 type_char = 'F';
+            } else if (board[row][col].bug != NULL) {
+                type_char = 'B';
             } else {
                 type_char = type_to_char(board[row][col].type);
             }
