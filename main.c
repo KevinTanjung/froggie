@@ -229,43 +229,55 @@ void remove_log(
     int last_coordinate[2]
 ) {
     int row, col;
-    printf ("To remove log(s), please input [row] [column]: ");
-    scanf ("%d %d", &row, &col);
-
-    //Looping to check if log tile is occupied by frogger. Log tile occupied by frogger will not be changed to water.
-    int i = 0;
-    while (i < SIZE) //Following the size of the board to check the whole row (adjacent possible logs to the left and right).
-    {
-        if (board[row][i].occupied) //Tile occupied by Frogger.
-        {
-            printf ("The log at row %d and column %d cannot be removed as Frogger is there.\n", row, col);
-            return; //Do nothing to the tile.
-        }
-        i++;
-    }
+    printf("To remove log(s), please input [row] [column]: ");
+    scanf("%d %d", &row, &col);
 
     if (board[row][col].type != LOG) //Tile that is not log tile will not be changed.
         {
             printf("There is no log to remove at row %d and column %d.\n", row, col);
             return;
         }
-    else (board[row][col].type = WATER); //If it is a log tile, it will be changed to water.
 
-    int y = col + 1; //Looping to check if there are any log tiles to the right. If there are, change to water.
-    while ((y < SIZE) && board[row][y].type == LOG);
-    {
-        board[row][y].type = WATER;
-        y++;
-    }
+    //To check for Frogger.
+    int frogger_present = 0;
 
-    int z = col - 1; //Looping to check if there are any log tiles to the left. If there are, change to water.
-    while ((z >= 0) && board[row][z].type == LOG);
+    int z = col; //Looping to check if Frogger is present on the left.
+    while ((z >= LEFT_COLUMN) && board[row][z].type == LOG)
     {
-        board[row][z].type = WATER;
+        if(board[row][z].occupied)
+        {
+            frogger_present = 1; //if present, set frogger_present to 1.
+        }
         z--;
     }
 
-    printf("Log(s) removed on row %d and column %d and any logs adjacent to it.\n", row, col);
+    int y = col; //Looping to check if Frogger is present on the right.
+    while ((y <= RIGHT_COLUMN) && board[row][y].type == LOG)
+    {
+        if(board[row][y].occupied)
+        {
+            frogger_present = 1; //if present, set frogger_present to 1.
+        }
+        y++;
+    }
+
+    //To remove logs if Frogger is not present on any adjacent logs.
+
+    if (frogger_present == 1)
+    {
+        printf("Cannot remove logs as a Frogger is present on an adjacent log.\n");
+    }
+    else
+    {
+        int removal = z;
+        while (removal <= y)
+        {
+            board[row][removal].type = WATER;
+            removal++;
+        }
+    }
+
+    printf("Log(s) removed on row %d and column %d, and any logs adjacent to it.\n", row, col);
 }
 
 void move_frogger(
