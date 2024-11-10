@@ -62,8 +62,8 @@ int is_placeable(int row, int col);
 void place_turtles(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
 void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
 void add_bug(struct board_tile board[SIZE][SIZE], struct bug_node** bug_linked_list);
-void clear_row(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
-void remove_log(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
+void clear_row(struct board_tile board[SIZE][SIZE], int last_coordinate[2], struct bug_node** bug_linked_list);
+void remove_log(struct board_tile board[SIZE][SIZE], int last_coordinate[2], struct bug_node** bug_linked_list);
 void move_frogger(struct board_tile board[SIZE][SIZE], char command, int last_coordinate[2]);
 void move_bug(struct board_tile board[SIZE][SIZE], struct bug_node* bug_linked_list);
 void occupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
@@ -112,10 +112,10 @@ int main(void) {
                 add_log(game_board, turtle_row);
                 break;
             case 'c':
-                clear_row(game_board, last_coordinate);
+                clear_row(game_board, last_coordinate, &bug_linked_list);
                 break;
             case 'r':
-                remove_log(game_board, last_coordinate);
+                remove_log(game_board, last_coordinate, &bug_linked_list);
                 break;
             case 'b':
                 add_bug(game_board, &bug_linked_list);
@@ -247,7 +247,8 @@ void add_bug(
 
 void clear_row(
     struct board_tile board[SIZE][SIZE],
-    int last_coordinate[2]
+    int last_coordinate[2],
+    struct bug_node** bug_linked_list
 ) {
     int row;
     printf("Enter row to clear: ");
@@ -270,13 +271,18 @@ void clear_row(
         if (board[row][col].type == TURTLE || board[row][col].type == LOG) {
             board[row][col].type = WATER;
         }
+        if (board[row][col].bug != NULL) {
+            remove_bug_node(bug_linked_list, board[row][col].bug);
+            board[row][col].bug = NULL;
+        }
     }
     printf("Row %d cleared.\n", row);
 }
 
 void remove_log(
     struct board_tile board[SIZE][SIZE],
-    int last_coordinate[2]
+    int last_coordinate[2],
+    struct bug_node** bug_linked_list
 ) {
     int row, col;
     printf("To remove log(s), please input [row] [column]: ");
@@ -314,6 +320,10 @@ void remove_log(
         int removal = z;
         while (removal <= y) {
             board[row][removal].type = WATER;
+            if (board[row][removal].bug != NULL) {
+                remove_bug_node(bug_linked_list, board[row][removal].bug);
+                board[row][removal].bug = NULL;
+            }
             removal++;
         }
         printf("Log(s) removed on row %d and column %d, and any logs adjacent to it.\n", row, col);
