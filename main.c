@@ -379,8 +379,34 @@ void move_bug(
     struct board_tile board[SIZE][SIZE],
     struct bug_node* bug_linked_list
 ) {
-    printf("// TODO move_bug\n");
-    // Hint: use bug_linked_list to traverse over the list of bug
+    struct bug_node* current_bug = bug_linked_list;
+    while (current_bug != NULL) {
+        int next_col = current_bug->col;
+        int direction = board[current_bug->row][current_bug->col].type == WATER ? 1 : -1; // move right by default
+
+        if (direction == 1 && current_bug->col < RIGHT_COLUMN
+            && board[current_bug->row][current_bug->col + 1].bug == NULL)
+        {
+                next_col = current_bug->col + 1;
+
+        }
+        else if (direction == -1 && current_bug->col > LEFT_COLUMN
+            && board[current_bug->row][current_bug->col - 1].bug == NULL)
+        {
+            next_col = current_bug->row - 1;
+        }
+        else {
+            // Change direction
+            direction *= -1;
+            next_col = current_bug->row - direction;
+        }
+
+        // Update board and bug's position
+        board[current_bug->row][current_bug->col].bug = NULL;
+        board[current_bug->row][next_col].bug = current_bug;
+        current_bug->col = next_col;
+        current_bug = current_bug->next;
+    }
 }
 
 void occupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]) {
