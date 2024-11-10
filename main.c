@@ -30,6 +30,7 @@
 #define Y             1
 #define DEFAULT_LIVES 3
 #define DEAD          0
+#define GAME_WON      -1
 
 // Provided Enums
 enum tile_type {LILLYPAD, BANK, WATER, TURTLE, LOG};
@@ -94,7 +95,7 @@ int main(void) {
     print_board(game_board);
 
     char command;
-    while (lives > 0) {
+    while (lives > DEAD) {
         printf("|--------------------------------------------------------------------|\n");
         printf("| q = quit     |  l = add log    |  c = clear row  |  r = remove log |\n");
         printf("| b = add bug  |                 |                 |                 |\n");
@@ -132,6 +133,12 @@ int main(void) {
                 continue;
         }
         print_board(game_board);
+    }
+
+    if (lives == DEAD) {
+        printf("\n!! GAME OVER !!\n");
+    } else if (lives == GAME_WON) {
+        printf("Wahoo!! You Won!\n");
     }
 
     printf("\nThank you for playing Frogger Game!\n");
@@ -375,44 +382,42 @@ int check_winning_condition(
     struct board_tile tile = board[last_coordinate[X]][last_coordinate[Y]];
 
     //If the Frogger lands on water, decrease lives.
-    if (tile.type == WATER)
-        {
-            lives--;
-            printf("Frogger has fallen into the water! Remaining lives: %d\n", lives);
+    if (tile.type == WATER) {
+        lives--;
+        printf("Frogger has fallen into the water! Remaining lives: %d\n", lives);
 
-            if (lives == 0) //Should lives reach 0, player has lost the game (losing condition).
-            {
-                printf("\n!! Game Over !!\n");
-                return 0;
-            }
-            else //If lives have not reached 0, reset Frogger position and print the game board to start again.
-            {
-                reset_frogger(board, last_coordinate);
-                return lives;
-            }
+        if (lives == 0) //Should lives reach 0, player has lost the game (losing condition).
+        {
+            printf("\n!! Game Over !!\n");
+            return 0;
         }
+        else //If lives have not reached 0, reset Frogger position and print the game board to start again.
+        {
+            reset_frogger(board, last_coordinate);
+            return lives;
+        }
+    }
 
     //If Frogger hits a bug, decrease lives.
     if (tile.bug != NULL) //Conditional check for bugs.
-        {
-            lives--;
-            printf("Oh no! Frogger hit a bug! Remaining lives: %d\n", lives);
+    {
+        lives--;
+        printf("Oh no! Frogger hit a bug! Remaining lives: %d\n", lives);
 
-            if (lives == 0) //Should lives reach 0, player has lost the game (losing condition).
-            {
-                printf("\n!! Game Over !!\n");
-                return 0;
-            }
-            else //If lives have not reached 0, reset Frogger position and print the game board to start again.
-            {
-                reset_frogger(board, last_coordinate);
-                return lives;
-            }
+        if (lives == 0) //Should lives reach 0, player has lost the game (losing condition).
+        {
+            printf("\n!! Game Over !!\n");
+            return 0;
         }
+        else //If lives have not reached 0, reset Frogger position and print the game board to start again.
+        {
+            reset_frogger(board, last_coordinate);
+            return lives;
+        }
+    }
 
     //If Frogger lands on a lillypad, player has won the game (winning condition).
-    if (tile.type == LILLYPAD)
-    {
+    if (tile.type == LILLYPAD) {
         printf("\nWahoo!! You Won!\n");
         return -1;
     }
