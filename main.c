@@ -30,6 +30,7 @@
 #define Y             1
 #define DEFAULT_LIVES 3
 #define DEAD          0
+#define GAME_WON      -1
 
 // Provided Enums
 enum tile_type {LILLYPAD, BANK, WATER, TURTLE, LOG};
@@ -94,7 +95,7 @@ int main(void) {
     print_board(game_board);
 
     char command;
-    while (1) {
+    while (lives > DEAD) {
         printf("|--------------------------------------------------------------------|\n");
         printf("| q = quit     |  l = add log    |  c = clear row  |  r = remove log |\n");
         printf("| b = add bug  |                 |                 |                 |\n");
@@ -132,6 +133,12 @@ int main(void) {
                 continue;
         }
         print_board(game_board);
+    }
+
+    if (lives == DEAD) {
+        printf("\n!! GAME OVER !!\n");
+    } else if (lives == GAME_WON) {
+        printf("Wahoo!! You Won!\n");
     }
 
     printf("\nThank you for playing Frogger Game!\n");
@@ -371,7 +378,18 @@ int check_winning_condition(
     int last_coordinate[2],
     int lives
 ) {
-    // Hint: return the updated lives count
+    struct board_tile current_board = board[last_coordinate[X]][last_coordinate[Y]];
+    if (current_board.type == WATER || current_board.bug != NULL) {
+        int newLives = lives - 1;
+        if (newLives != DEAD) {
+            printf("\n# LIVES LEFT: %d #\n\n", newLives);
+            reset_frogger(board, last_coordinate);
+        }
+        return newLives;
+    }
+    if (current_board.type == LILLYPAD) {
+        return GAME_WON;
+    }
     return lives;
 }
 
