@@ -398,12 +398,45 @@ struct bug_node* create_bug_node(struct bug_node** bug_linked_list, int row, int
     }
     bug->row = row;
     bug->col = col;
-    bug->next = *bug_linked_list;
     bug->prev = NULL;
-    if (*bug_linked_list != NULL) {
-        (*bug_linked_list)->prev = bug;
+    bug->next = NULL;
+
+    // list is empty, therefore set as HEAD
+    if (*bug_linked_list == NULL) {
+        *bug_linked_list = bug;
+        return bug;
     }
-    *bug_linked_list = bug;
+
+    // insert in the list based on the row/column order
+    struct bug_node* current = *bug_linked_list;
+    struct bug_node* previous = NULL;
+    while (current != NULL && (
+        current->row < bug->row                                     // exit if current item has row smaller than inserted bug
+        || (current->row == bug->row && current->col < bug->col)    // exit if current item has column smaller than inserted bug
+    )) {
+        // keep reference to the previous node, since we have doubly linked list
+        previous = current;
+        // iterate to the next node
+        current = current->next;
+    }
+
+    // if no previous, then we need to insert at the beginning
+    if (previous == NULL) {
+        bug->next = *bug_linked_list;
+        (*bug_linked_list)->prev = bug;
+        *bug_linked_list = bug;
+    }
+    // else it's inserting in the middle or end
+    else {
+        bug->next = current;
+        bug->prev = previous;
+        previous->next = bug;
+        // if it's not the end, then we need to re-point the next node to current node
+        if (current != NULL) {
+            current->prev = bug;
+        }
+    }
+
     return bug;
 }
 
