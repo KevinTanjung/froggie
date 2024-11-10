@@ -233,8 +233,16 @@ void add_bug(
     struct board_tile board[SIZE][SIZE],
     struct bug_node** bug_linked_list
 ) {
-    // Hint: use create_bug_node() function and store the result in the board
-    printf("// TODO add_bug [row] [column]\n");
+    int row, col = -1;
+    printf("Adding Bug, input [row] [col]: ");
+    scanf("%d %d", &row, &col);
+
+    if ((board[row][col].type != TURTLE && board[row][col].type != LOG)
+        || board[row][col].bug != NULL
+    ) {
+        return;
+    }
+    board[row][col].bug = create_bug_node(bug_linked_list, row, col);
 }
 
 void clear_row(
