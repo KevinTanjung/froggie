@@ -30,6 +30,7 @@
 #define Y             1
 #define DEFAULT_LIVES 3
 #define DEAD          0
+#define GAME_WON      -1
 
 // Provided Enums
 enum tile_type {LILLYPAD, BANK, WATER, TURTLE, LOG};
@@ -61,8 +62,8 @@ int is_placeable(int row, int col);
 void place_turtles(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
 void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
 void add_bug(struct board_tile board[SIZE][SIZE], struct bug_node** bug_linked_list);
-void clear_row(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
-void remove_log(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
+void clear_row(struct board_tile board[SIZE][SIZE], int last_coordinate[2], struct bug_node** bug_linked_list);
+void remove_log(struct board_tile board[SIZE][SIZE], int last_coordinate[2], struct bug_node** bug_linked_list);
 void move_frogger(struct board_tile board[SIZE][SIZE], char command, int last_coordinate[2]);
 void move_bug(struct board_tile board[SIZE][SIZE], struct bug_node* bug_linked_list);
 void occupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
@@ -94,7 +95,7 @@ int main(void) {
     print_board(game_board);
 
     char command;
-    while (lives > 0) {
+    while (lives > DEAD) {
         printf("|--------------------------------------------------------------------|\n");
         printf("| q = quit     |  l = add log    |  c = clear row  |  r = remove log |\n");
         printf("| b = add bug  |                 |                 |                 |\n");
@@ -111,10 +112,10 @@ int main(void) {
                 add_log(game_board, turtle_row);
                 break;
             case 'c':
-                clear_row(game_board, last_coordinate);
+                clear_row(game_board, last_coordinate, &bug_linked_list);
                 break;
             case 'r':
-                remove_log(game_board, last_coordinate);
+                remove_log(game_board, last_coordinate, &bug_linked_list);
                 break;
             case 'b':
                 add_bug(game_board, &bug_linked_list);
@@ -132,6 +133,12 @@ int main(void) {
                 continue;
         }
         print_board(game_board);
+    }
+
+    if (lives == DEAD) {
+        printf("\n!! GAME OVER !!\n");
+    } else if (lives == GAME_WON) {
+        printf("Wahoo!! You Won!\n");
     }
 
     printf("\nThank you for playing Frogger Game!\n");
@@ -226,13 +233,22 @@ void add_bug(
     struct board_tile board[SIZE][SIZE],
     struct bug_node** bug_linked_list
 ) {
-    // Hint: use create_bug_node() function and store the result in the board
-    printf("// TODO add_bug [row] [column]\n");
+    int row, col = -1;
+    printf("Adding Bug, input [row] [col]: ");
+    scanf("%d %d", &row, &col);
+
+    if ((board[row][col].type != TURTLE && board[row][col].type != LOG)
+        || board[row][col].bug != NULL
+    ) {
+        return;
+    }
+    board[row][col].bug = create_bug_node(bug_linked_list, row, col);
 }
 
 void clear_row(
     struct board_tile board[SIZE][SIZE],
-    int last_coordinate[2]
+    int last_coordinate[2],
+    struct bug_node** bug_linked_list
 ) {
     int row;
     printf("Enter row to clear: ");
@@ -255,13 +271,18 @@ void clear_row(
         if (board[row][col].type == TURTLE || board[row][col].type == LOG) {
             board[row][col].type = WATER;
         }
+        if (board[row][col].bug != NULL) {
+            remove_bug_node(bug_linked_list, board[row][col].bug);
+            board[row][col].bug = NULL;
+        }
     }
     printf("Row %d cleared.\n", row);
 }
 
 void remove_log(
     struct board_tile board[SIZE][SIZE],
-    int last_coordinate[2]
+    int last_coordinate[2],
+    struct bug_node** bug_linked_list
 ) {
     int row, col;
     printf("To remove log(s), please input [row] [column]: ");
@@ -299,6 +320,10 @@ void remove_log(
         int removal = z;
         while (removal <= y) {
             board[row][removal].type = WATER;
+            if (board[row][removal].bug != NULL) {
+                remove_bug_node(bug_linked_list, board[row][removal].bug);
+                board[row][removal].bug = NULL;
+            }
             removal++;
         }
         printf("Log(s) removed on row %d and column %d, and any logs adjacent to it.\n", row, col);
@@ -375,44 +400,42 @@ int check_winning_condition(
     struct board_tile tile = board[last_coordinate[X]][last_coordinate[Y]];
 
     //If the Frogger lands on water, decrease lives.
-    if (tile.type == WATER)
-        {
-            lives--;
-            printf("Frogger has fallen into the water! Remaining lives: %d\n", lives);
+    if (tile.type == WATER) {
+        lives--;
+        printf("Frogger has fallen into the water! Remaining lives: %d\n", lives);
 
-            if (lives == 0) //Should lives reach 0, player has lost the game (losing condition).
-            {
-                printf("\n!! Game Over !!\n");
-                return 0;
-            }
-            else //If lives have not reached 0, reset Frogger position and print the game board to start again.
-            {
-                reset_frogger(board, last_coordinate);
-                return lives;
-            }
+        if (lives == 0) //Should lives reach 0, player has lost the game (losing condition).
+        {
+            printf("\n!! Game Over !!\n");
+            return 0;
         }
+        else //If lives have not reached 0, reset Frogger position and print the game board to start again.
+        {
+            reset_frogger(board, last_coordinate);
+            return lives;
+        }
+    }
 
     //If Frogger hits a bug, decrease lives.
     if (tile.bug != NULL) //Conditional check for bugs.
-        {
-            lives--;
-            printf("Oh no! Frogger hit a bug! Remaining lives: %d\n", lives);
+    {
+        lives--;
+        printf("Oh no! Frogger hit a bug! Remaining lives: %d\n", lives);
 
-            if (lives == 0) //Should lives reach 0, player has lost the game (losing condition).
-            {
-                printf("\n!! Game Over !!\n");
-                return 0;
-            }
-            else //If lives have not reached 0, reset Frogger position and print the game board to start again.
-            {
-                reset_frogger(board, last_coordinate);
-                return lives;
-            }
+        if (lives == 0) //Should lives reach 0, player has lost the game (losing condition).
+        {
+            printf("\n!! Game Over !!\n");
+            return 0;
         }
+        else //If lives have not reached 0, reset Frogger position and print the game board to start again.
+        {
+            reset_frogger(board, last_coordinate);
+            return lives;
+        }
+    }
 
     //If Frogger lands on a lillypad, player has won the game (winning condition).
-    if (tile.type == LILLYPAD)
-    {
+    if (tile.type == LILLYPAD) {
         printf("\nWahoo!! You Won!\n");
         return -1;
     }
