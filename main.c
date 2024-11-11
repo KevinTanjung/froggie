@@ -171,7 +171,10 @@ void init_board(struct board_tile board[SIZE][SIZE]) {
     }
 }
 
-void place_turtles(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]) {
+void place_turtles(
+    struct board_tile board[SIZE][SIZE],
+    int turtle_row[SIZE]
+) {
     // Read user input and place turtles.
     int num_turtles;
     printf("How many turtles? ");
@@ -202,7 +205,10 @@ int is_placeable(int row, int col) {
         && col <= RIGHT_COLUMN;
 }
 
-void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]) {
+void add_log(
+    struct board_tile board[SIZE][SIZE],
+    int turtle_row[SIZE]
+) {
     int row, start_col, end_col = -1;
     printf("Adding Log, input [row] [start_col] [end_col]: ");
     scanf("%d %d %d", &row, &start_col, &end_col);
@@ -395,11 +401,17 @@ void move_bug(
     }
 }
 
-void occupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]) {
+void occupy(
+    struct board_tile board[SIZE][SIZE],
+    int last_coordinate[2]
+) {
     board[last_coordinate[X]][last_coordinate[Y]].occupied = TRUE;
 }
 
-void unoccupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]) {
+void unoccupy(
+    struct board_tile board[SIZE][SIZE],
+    int last_coordinate[2]
+) {
     board[last_coordinate[X]][last_coordinate[Y]].occupied = FALSE;
 }
 
@@ -429,8 +441,7 @@ int check_winning_condition(
     }
 
     //If Frogger hits a bug, decrease lives.
-    if (tile.bug != NULL) //Conditional check for bugs.
-    {
+    if (tile.bug != NULL) { //Conditional check for bugs.
         lives--;
         printf("Oh no! Frogger hit a bug! Remaining lives: %d\n", lives);
 
@@ -454,7 +465,10 @@ int check_winning_condition(
     return lives;
 }
 
-void reset_frogger(struct board_tile board[SIZE][SIZE], int last_coordinate[2]) {
+void reset_frogger(
+    struct board_tile board[SIZE][SIZE],
+    int last_coordinate[2]
+) {
     board[last_coordinate[X]][last_coordinate[Y]].occupied = FALSE;
     last_coordinate[X] = BANK_ROW;
     last_coordinate[Y] = SIZE / 2;
@@ -469,7 +483,11 @@ void reset_frogger(struct board_tile board[SIZE][SIZE], int last_coordinate[2]) 
  * into the list, since array needs to have a predetermined length, and removal might
  * introduce gap in the list.
  */
-struct bug_node* create_bug_node(struct bug_node** bug_linked_list, int row, int col) {
+struct bug_node* create_bug_node(
+    struct bug_node** bug_linked_list,
+    int row,
+    int col
+) {
     struct bug_node* bug = (struct bug_node*) malloc(sizeof(struct bug_node));
     if (bug == NULL) {
         printf("Memory allocation failed.\n");
