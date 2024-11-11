@@ -51,6 +51,7 @@ struct bug_node {
     int col;
     struct bug_node* prev;
     struct bug_node* next;
+    int moving_right;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -85,9 +86,7 @@ int main(void) {
     struct bug_node* bug_linked_list = NULL; // linked list to help us add/remove bug for easy traversal and lookup
     int lives = DEFAULT_LIVES;
     int turtle_row[SIZE] = {FALSE}; // dictionary to help us indicate if certain row has a turtle for O(1) lookup
-    int last_coordinate[2]; // (x, y)
-    last_coordinate[X] = BANK_ROW;
-    last_coordinate[Y] = SIZE / 2;
+    int last_coordinate[2] = {BANK_ROW, SIZE / 2}; // (x, y)
 
     init_board(game_board);
     place_turtles(game_board, turtle_row);
@@ -335,43 +334,53 @@ void move_frogger(
     char command,
     int last_coordinate[2]
 ) {
+    unoccupy(board, last_coordinate);
     switch (command) {
         case 'w':
-            // moving up -> smaller X -> cannot be less than LILLYPAD_ROW
-            if (last_coordinate[X] - 1 >= LILLYPAD_ROW) {
-                unoccupy(board, last_coordinate);
-                last_coordinate[X]--;
-                occupy(board, last_coordinate);
-            }
-            break;
-        case 'a':
-            // moving left -> smaller Y -> cannot be less than LEFT_COLUMN
-            if (last_coordinate[Y] - 1 >= LEFT_COLUMN) {
-                unoccupy(board, last_coordinate);
-                last_coordinate[Y]--;
-                occupy(board, last_coordinate);
-            }
+            last_coordinate[X] = MAX(last_coordinate[X] - 1, LILLYPAD_ROW);
             break;
         case 's':
-            // moving down -> greater X -> cannot be greater than BANK_ROW
-            if (last_coordinate[X] + 1 <= BANK_ROW) {
-                unoccupy(board, last_coordinate);
-                last_coordinate[X]++;
-                occupy(board, last_coordinate);
-            }
+            last_coordinate[X] = MIN(last_coordinate[X] + 1, BANK_ROW);
+            break;
+        case 'a':
+            last_coordinate[Y] = MAX(last_coordinate[Y] - 1, LEFT_COLUMN);
             break;
         case 'd':
-            // moving right -> greater Y -> cannot be greater than RIGHT_COLUMN
-            if (last_coordinate[Y] + 1 <= RIGHT_COLUMN) {
-                unoccupy(board, last_coordinate);
-                last_coordinate[Y]++;
-                occupy(board, last_coordinate);
-            }
+            last_coordinate[Y] = MIN(last_coordinate[Y] + 1, RIGHT_COLUMN);
             break;
+    }
+    occupy(board, last_coordinate);
+}
 
-    default:
-        printf("Invalid move command: [%c]\n", command);
-        break;
+int is_bug_moveable(
+    struct board_tile board[SIZE][SIZE],
+    int row,
+    int col
+) {
+    return row > LILLYPAD_ROW && row < BANK_ROW
+        && col <= RIGHT_COLUMN && col >= LEFT_COLUMN
+        && (board[row][col].type == TURTLE || board[row][col].type == LOG)
+        && (board[row][col].bug == NULL);
+}
+
+void move_bug_direction(
+    struct board_tile board[SIZE][SIZE],
+    struct bug_node* bug_linked_list,
+    int direction
+) {
+    struct bug_node* current_bug = bug_linked_list;
+    int row = current_bug->row;
+    int col = current_bug->col;
+    int next_col = col + direction;
+    if (is_bug_moveable(board, row, next_col) == FALSE) {
+        if (is_bug_moveable(board, row, col - direction) == TRUE) {
+            current_bug->moving_right = !current_bug->moving_right;
+            move_bug_direction(board, current_bug, -direction);
+        }
+    } else {
+        board[row][col].bug = NULL;
+        board[row][next_col].bug = current_bug;
+        current_bug->col = next_col;
     }
 }
 
@@ -379,8 +388,11 @@ void move_bug(
     struct board_tile board[SIZE][SIZE],
     struct bug_node* bug_linked_list
 ) {
-    printf("// TODO move_bug\n");
-    // Hint: use bug_linked_list to traverse over the list of bug
+    struct bug_node* current_bug = bug_linked_list;
+    while (current_bug != NULL) {
+        move_bug_direction(board, current_bug, current_bug->moving_right ? 1 : -1);
+        current_bug = current_bug->next;
+    }
 }
 
 void occupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]) {
@@ -467,6 +479,7 @@ struct bug_node* create_bug_node(struct bug_node** bug_linked_list, int row, int
     bug->col = col;
     bug->prev = NULL;
     bug->next = NULL;
+    bug->moving_right = TRUE;
 
     // list is empty, therefore set as HEAD
     if (*bug_linked_list == NULL) {
