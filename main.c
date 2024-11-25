@@ -32,6 +32,15 @@
 #define DEAD          0
 #define GAME_WON      -1
 
+// ANSI color codes
+#define RESET_COLOR     "\033[0m"
+#define GREEN_COLOR     "\033[32m"          // Green for Lilly Pad
+#define BLUE_COLOR      "\033[34m"          // Blue for Water
+#define YELLOW_COLOR    "\033[33m"          // Yellow for Turtle
+#define RED_COLOR       "\033[31m"          // Red for Bank
+#define BROWN_COLOR     "\033[38;5;130m"    // Brown for Log
+#define FROG_COLOR      "\033[35m"          // Magenta for Frog
+
 // Provided Enums
 enum tile_type {LILLYPAD, BANK, WATER, TURTLE, LOG};
 
@@ -72,7 +81,7 @@ void unoccupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 int check_winning_condition(struct board_tile board[SIZE][SIZE], int last_coordinate[2], int lives);
 void reset_frogger(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 void print_board(struct board_tile board[SIZE][SIZE]);
-char type_to_char(enum tile_type type);
+void type_to_char(enum tile_type type);
 struct bug_node* create_bug_node(struct bug_node** bug_linked_list, int x, int y);
 void remove_bug_node(struct bug_node** bug_linked_list, struct bug_node* to_be_removed);
 
@@ -565,32 +574,36 @@ void remove_bug_node(
 void print_board(struct board_tile board[SIZE][SIZE]) {
     for (int row = 0; row < SIZE; row++) {
         for (int col = 0; col < SIZE; col++) {
-            char type_char = '\0';
             if (board[row][col].occupied) {
-                type_char = 'F';
+                printf("%s%c%s ", FROG_COLOR, 'F', RESET_COLOR);
             } else if (board[row][col].bug != NULL) {
-                type_char = 'B';
+                printf("%s%c%s ", RED_COLOR, 'B', RESET_COLOR);
             } else {
-                type_char = type_to_char(board[row][col].type);
+                type_to_char(board[row][col].type);
             }
-            printf("%c ", type_char);
         }
         printf("\n");
     }
 }
 
-char type_to_char(enum tile_type type) {
+void type_to_char(enum tile_type type) {
     char type_char = ' ';
+    const char *color_code = RESET_COLOR;
     if (type == LILLYPAD) {
         type_char = 'o';
+        color_code = GREEN_COLOR;
     } else if (type == BANK) {
         type_char = 'x';
+        color_code = RED_COLOR;
     } else if (type == WATER) {
         type_char = '~';
+        color_code = BLUE_COLOR;
     } else if (type == TURTLE) {
         type_char = 'T';
+        color_code = YELLOW_COLOR;
     } else if (type == LOG) {
         type_char = 'L';
+        color_code = BROWN_COLOR;
     }
-    return type_char;
+    printf("%s%c%s ", color_code, type_char, RESET_COLOR);
 }
