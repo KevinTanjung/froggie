@@ -11,6 +11,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <wchar.h>
+#include <locale.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////  CONSTANTS  /////////////////////////////////
@@ -42,10 +44,8 @@
 #define FROG_COLOR      "\033[35m"          // Magenta for Frog
 
 // Provided Enums
-enum tile_type {LILLYPAD, BANK, WATER, TURTLE, LOG};
-enum map_skin {RETRO, COLOR, EMOJI, COLOR_EMOJI}
-
-enum map_skin selected_skin = RETRO;
+enum tile_type {LILLYPAD, BANK, WATER, TURTLE, LOG, FROG, BUG};
+enum map_skin {RETRO, COLOR, EMOJI, COLOR_EMOJI};
 
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////  STRUCTS  //////////////////////////////////
@@ -70,6 +70,7 @@ struct bug_node {
 /////////////////////////////  FUNCTION PROTOTYPES  ////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+void select_skin(enum map_skin* selected_skin);
 void init_board(struct board_tile board[SIZE][SIZE]);
 int is_placeable(int row, int col);
 void place_turtles(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
@@ -83,8 +84,8 @@ void occupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 void unoccupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 int check_winning_condition(struct board_tile board[SIZE][SIZE], int last_coordinate[2], int lives);
 void reset_frogger(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
-void print_board(struct board_tile board[SIZE][SIZE]);
-void type_to_char(enum tile_type type);
+void print_board(struct board_tile board[SIZE][SIZE], enum map_skin selected_skin);
+void print_tile(struct board_tile tile, enum map_skin selected_skin);
 struct bug_node* create_bug_node(struct bug_node** bug_linked_list, int x, int y);
 void remove_bug_node(struct bug_node** bug_linked_list, struct bug_node* to_be_removed);
 
@@ -93,23 +94,27 @@ void remove_bug_node(struct bug_node** bug_linked_list, struct bug_node* to_be_r
 ////////////////////////////////////////////////////////////////////////////////
 
 int main(void) {
+    setlocale(LC_ALL, "");
+
     printf("Welcome to Frogger Game!\n");
     struct board_tile game_board[SIZE][SIZE];
     struct bug_node* bug_linked_list = NULL; // linked list to help us add/remove bug for easy traversal and lookup
     int lives = DEFAULT_LIVES;
     int turtle_row[SIZE] = {FALSE}; // dictionary to help us indicate if certain row has a turtle for O(1) lookup
     int last_coordinate[2] = {BANK_ROW, SIZE / 2}; // (x, y)
+    enum map_skin selected_skin = RETRO;
 
     init_board(game_board);
+    select_skin(&selected_skin);
     place_turtles(game_board, turtle_row);
     printf("Game Started\n");
-    print_board(game_board);
+    print_board(game_board, selected_skin);
 
     char command;
     while (lives > DEAD) {
         printf("|--------------------------------------------------------------------|\n");
         printf("| q = quit     |  l = add log    |  c = clear row  |  r = remove log |\n");
-        printf("| b = add bug  |                 |                 |                 |\n");
+        printf("| b = add bug  |  m = map theme  |                 |                 |\n");
         printf("| w = move up  |  a = move left  |  s = move down  |  d = move right |\n");
         printf("|--------------------------------------------------------------------|\n");
         printf("Enter command: ");
@@ -139,11 +144,14 @@ int main(void) {
                 move_bug(game_board, bug_linked_list);
                 lives = check_winning_condition(game_board, last_coordinate, lives);
                 break;
+            case 'm':
+                select_skin(&selected_skin);
+                break;
             default:
                 printf("Invalid command!\n");
                 continue;
         }
-        print_board(game_board);
+        print_board(game_board, selected_skin);
     }
 
     if (lives == DEAD) {
@@ -159,6 +167,32 @@ int main(void) {
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////// ADDITIONAL FUNCTIONS /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+void select_skin(enum map_skin* selected_skin) {
+    int skin_idx = 0;
+    printf("Which map theme do you want to use?\n");
+    printf(" 1. RETRO: Default, plain black & white.\n");
+    printf(" 2. COLOR: Similar symbol with RETRO but with color.\n");
+    printf(" 3. EMOJI: Change the symbol to emoji!\n");
+    printf(" 4. COLOR_EMOJI: Combination of colored character and emoji!\n");
+    printf("Enter your choice (1-4): ");
+    scanf("%d", &skin_idx);
+
+    switch (skin_idx) {
+        case 2:
+            *selected_skin = COLOR;
+            break;
+        case 3:
+            *selected_skin = EMOJI;
+            break;
+        case 4:
+            *selected_skin = COLOR_EMOJI;
+            break;
+        default:
+            *selected_skin = RETRO;
+            break;
+    }
+}
 
 void init_board(struct board_tile board[SIZE][SIZE]) {
     for (int i = 0; i < SIZE; i++) {
@@ -574,39 +608,50 @@ void remove_bug_node(
 ////////////////////////////// PROVIDED FUNCTIONS //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void print_board(struct board_tile board[SIZE][SIZE]) {
+char tile_chars[] = { 'o', 'x', '~', 'T', 'L', 'F', 'B' };
+char* tile_colors[] = { GREEN_COLOR, RED_COLOR, BLUE_COLOR, YELLOW_COLOR, BROWN_COLOR, FROG_COLOR, RED_COLOR };
+wchar_t* tile_emojis[] = { L"🌸", L"🍀", L"🌊", L"🐢", L"🌳", L"🐸", L"🐞" };
+
+void print_board(struct board_tile board[SIZE][SIZE], enum map_skin selected_skin) {
     for (int row = 0; row < SIZE; row++) {
         for (int col = 0; col < SIZE; col++) {
-            if (board[row][col].occupied) {
-                printf("%s%c%s ", FROG_COLOR, 'F', RESET_COLOR);
-            } else if (board[row][col].bug != NULL) {
-                printf("%s%c%s ", RED_COLOR, 'B', RESET_COLOR);
-            } else {
-                type_to_char(board[row][col].type);
-            }
+            print_tile(board[row][col], selected_skin);
         }
-        printf("\n");
+
+        switch (selected_skin) {
+            case EMOJI:
+            case COLOR_EMOJI:
+                wprintf(L"\n");
+                break;
+            default:
+                printf("\n");
+                break;
+        }
     }
 }
 
-void type_to_char(enum tile_type type) {
-    char type_char = ' ';
-    const char *color_code = RESET_COLOR;
-    if (type == LILLYPAD) {
-        type_char = 'o';
-        color_code = GREEN_COLOR;
-    } else if (type == BANK) {
-        type_char = 'x';
-        color_code = RED_COLOR;
-    } else if (type == WATER) {
-        type_char = '~';
-        color_code = BLUE_COLOR;
-    } else if (type == TURTLE) {
-        type_char = 'T';
-        color_code = YELLOW_COLOR;
-    } else if (type == LOG) {
-        type_char = 'L';
-        color_code = BROWN_COLOR;
+void print_tile(struct board_tile tile, enum map_skin selected_skin) {
+    enum tile_type type = tile.type;
+    if (tile.occupied) {
+        type = FROG;
+    } else if (tile.bug != NULL) {
+        type = BUG;
     }
-    printf("%s%c%s ", color_code, type_char, RESET_COLOR);
+
+    switch (selected_skin) {
+        case EMOJI:
+        case COLOR_EMOJI:
+            if (type == WATER && selected_skin == COLOR_EMOJI) {
+                printf("%s%c%c%s ", tile_colors[type], tile_chars[type], tile_chars[type], RESET_COLOR);
+            } else {
+                wprintf(L"%ls ", tile_emojis[type]);
+            }
+            break;
+        case COLOR:
+            printf("%s%c%s ", tile_colors[type], tile_chars[type], RESET_COLOR);
+            break;
+        default:
+            printf("%c ", tile_chars[type]);
+            break;
+    }
 }
