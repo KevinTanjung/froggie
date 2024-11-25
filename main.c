@@ -84,6 +84,7 @@ void print_board(struct board_tile board[SIZE][SIZE]);
 void type_to_char(enum tile_type type);
 struct bug_node* create_bug_node(struct bug_node** bug_linked_list, int x, int y);
 void remove_bug_node(struct bug_node** bug_linked_list, struct bug_node* to_be_removed);
+void show_help();
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////  FUNCTION IMPLEMENTATIONS  //////////////////////////
@@ -101,14 +102,10 @@ int main(void) {
     place_turtles(game_board, turtle_row);
     printf("Game Started\n");
     print_board(game_board);
+    show_help();
 
     char command;
     while (lives > DEAD) {
-        printf("|--------------------------------------------------------------------|\n");
-        printf("| q = quit     |  l = add log    |  c = clear row  |  r = remove log |\n");
-        printf("| b = add bug  |                 |                 |                 |\n");
-        printf("| w = move up  |  a = move left  |  s = move down  |  d = move right |\n");
-        printf("|--------------------------------------------------------------------|\n");
         printf("Enter command: ");
         int result = scanf(" %c", &command);
         if (result == EOF || command == 'q') {
@@ -135,6 +132,13 @@ int main(void) {
                 move_frogger(game_board, command, last_coordinate);
                 move_bug(game_board, bug_linked_list);
                 lives = check_winning_condition(game_board, last_coordinate, lives);
+                break;
+            case 'h':
+                while (getchar() != '\n');
+                show_help();
+                printf("\n\nPress enter to exit the help...");
+                scanf("%[^\n]", &command);
+                printf("\n\n");
                 break;
             default:
                 printf("Invalid command!\n");
@@ -606,4 +610,14 @@ void type_to_char(enum tile_type type) {
         color_code = BROWN_COLOR;
     }
     printf("%s%c%s ", color_code, type_char, RESET_COLOR);
+}
+
+void show_help() {
+    printf("|--------------------------------------------------------------------|\n");
+    printf("|--------------- Enter 'h' command to show this help ----------------|\n");
+    printf("|--------------------------------------------------------------------|\n");
+    printf("| q = quit     |  l = add log    |  c = clear row  |  r = remove log |\n");
+    printf("| b = add bug  |                 |                 |                 |\n");
+    printf("| w = move up  |  a = move left  |  s = move down  |  d = move right |\n");
+    printf("|--------------------------------------------------------------------|\n");
 }
