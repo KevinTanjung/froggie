@@ -608,25 +608,17 @@ void remove_bug_node(
 ////////////////////////////// PROVIDED FUNCTIONS //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+// order by enum {LILLYPAD, BANK, WATER, TURTLE, LOG, FROG, BUG};
 char tile_chars[] = { 'o', 'x', '~', 'T', 'L', 'F', 'B' };
 char* tile_colors[] = { GREEN_COLOR, RED_COLOR, BLUE_COLOR, YELLOW_COLOR, BROWN_COLOR, FROG_COLOR, RED_COLOR };
-wchar_t* tile_emojis[] = { L"🌸", L"🍀", L"🌊", L"🐢", L"🌳", L"🐸", L"🐞" };
+wchar_t* tile_emojis[] = { L"🌸", L"🍀", L"💧", L"🐢", L"🪵 ", L"🐸", L"🐞" };
 
 void print_board(struct board_tile board[SIZE][SIZE], enum map_skin selected_skin) {
     for (int row = 0; row < SIZE; row++) {
         for (int col = 0; col < SIZE; col++) {
             print_tile(board[row][col], selected_skin);
         }
-
-        switch (selected_skin) {
-            case EMOJI:
-            case COLOR_EMOJI:
-                wprintf(L"\n");
-                break;
-            default:
-                printf("\n");
-                break;
-        }
+        printf("\n");
     }
 }
 
@@ -637,7 +629,6 @@ void print_tile(struct board_tile tile, enum map_skin selected_skin) {
     } else if (tile.bug != NULL) {
         type = BUG;
     }
-
     switch (selected_skin) {
         case EMOJI:
         case COLOR_EMOJI:
