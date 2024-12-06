@@ -491,8 +491,10 @@ void food_superpowers(
     int *lives
 ) {
     if(board[last_coordinate[X]][last_coordinate[Y]].type == FOOD) {
-        *lives = (*lives)++;
-        shout("Congratulations! Frogger ate some food and felt rejuvenated. Total lives: %d\n", *lives);
+        int current_Live = *lives;
+        *lives = current_Live + 1;
+        shout("Congratulations! Frogger ate some food and felt rejuvenated. Total lives: %d -> %d\n", current_Live, *lives);
+        board[last_coordinate[X]][last_coordinate[Y]].type = LOG;
     }
 }
 
