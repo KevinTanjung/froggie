@@ -82,7 +82,7 @@ void move_frogger(struct board_tile board[SIZE][SIZE], char command, int last_co
 void move_bug(struct board_tile board[SIZE][SIZE], struct bug_node* bug_linked_list);
 void occupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 void unoccupy(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
-int check_winning_condition(struct board_tile board[SIZE][SIZE], int last_coordinate[2], int lives);
+int check_winning_condition(struct board_tile board[SIZE][SIZE], int last_coordinate[2], int lives, enum map_skin selected_skin);
 void reset_frogger(struct board_tile board[SIZE][SIZE], int last_coordinate[2]);
 void print_board(struct board_tile board[SIZE][SIZE], enum map_skin selected_skin);
 void print_tile(struct board_tile tile, enum map_skin selected_skin);
@@ -141,7 +141,7 @@ int main(void) {
             case 'd':
                 move_frogger(game_board, command, last_coordinate);
                 move_bug(game_board, bug_linked_list);
-                lives = check_winning_condition(game_board, last_coordinate, lives);
+                lives = check_winning_condition(game_board, last_coordinate, lives, selected_skin);
                 continue;
             case 'h':
                 while (getchar() != '\n');
@@ -472,7 +472,8 @@ void unoccupy(
 int check_winning_condition(
     struct board_tile board[SIZE][SIZE],
     int last_coordinate[2],
-    int lives
+    int lives,
+    enum map_skin selected_skin
 ) {
     //To simplify current Frogger tile.
     struct board_tile tile = board[last_coordinate[X]][last_coordinate[Y]];
@@ -485,14 +486,14 @@ int check_winning_condition(
         if (lives == 0) //Should lives reach 0, player has lost the game (losing condition).
         {
             clear_screen();
-            print_board(board);
+            print_board(board, selected_skin);
             return 0;
         }
         else //If lives have not reached 0, reset Frogger position and print the game board to start again.
         {
             clear_screen();
             reset_frogger(board, last_coordinate);
-            print_board(board);
+            print_board(board, selected_skin);
             printf("\nFrogger has fallen into the water! Remaining lives: %d\n\n", lives);
             return lives;
         }
@@ -505,14 +506,14 @@ int check_winning_condition(
         if (lives == 0) //Should lives reach 0, player has lost the game (losing condition).
         {
             clear_screen();
-            print_board(board);
+            print_board(board, selected_skin);
             return 0;
         }
         else //If lives have not reached 0, reset Frogger position and print the game board to start again.
         {
             clear_screen();
             reset_frogger(board, last_coordinate);
-            print_board(board);
+            print_board(board, selected_skin);
             printf("\nOh no! Frogger hit a bug! Remaining lives: %d\n\n", lives);
             return lives;
         }
@@ -524,7 +525,7 @@ int check_winning_condition(
     }
 
     clear_screen();
-    print_board(board);
+    print_board(board, selected_skin);
     return lives;
 }
 
