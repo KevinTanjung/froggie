@@ -35,6 +35,7 @@
 #define DEAD          0
 #define GAME_WON      -1
 #define FOOD_LIMIT    2
+#define FOOD_DURATION 5
 
 // ANSI color codes
 #define RESET_COLOR     "\033[0m"
@@ -462,7 +463,7 @@ void add_food(struct board_tile board[SIZE][SIZE]) {
         if (board[row][col].type == WATER) //if the selected random tile is a water tile, change it to a food tile.
         {
             board[row][col].type = FOOD;
-            board[row][col].food_timer = 4; //Set the food timer to 4. The food will expire after 3 turns (beginning of 4th turn, the food is gone).
+            board[row][col].food_timer = FOOD_DURATION + 1; //Set the food timer to 4. The food will expire after 3 turns (beginning of 4th turn, the food is gone).
             food_count++;
         }
     }
@@ -474,9 +475,9 @@ void food_timer(struct board_tile board[SIZE][SIZE]) {
         int col = 0;
         while (col < SIZE) { //To check for any food tile on the board.
             if (board[row][col].type == FOOD) { //Should a food tile be found, the food timer will be reduced each turn.
-            board[row][col].food_timer--;
+                board[row][col].food_timer--;
                 if (board[row][col].food_timer <= 0) { //Should the food timer be equal to 0, the food tile will be changed to water.
-                board[row][col].type = WATER;
+                    board[row][col].type = WATER;
                 }
             }
             col++;
