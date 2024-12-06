@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <wchar.h>
 #include <locale.h>
+#include <stdarg.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////  CONSTANTS  /////////////////////////////////
@@ -33,6 +34,7 @@
 #define DEFAULT_LIVES 3
 #define DEAD          0
 #define GAME_WON      -1
+#define FOOD_LIMIT    2
 
 // ANSI color codes
 #define RESET_COLOR     "\033[0m"
@@ -44,8 +46,10 @@
 #define FROG_COLOR      "\033[35m"          // Magenta for Frog
 
 // Provided Enums
-enum tile_type {LILLYPAD, BANK, WATER, TURTLE, LOG, FROG, BUG};
+enum tile_type {LILLYPAD, BANK, WATER, TURTLE, LOG, FROG, BUG, FOOD};
 enum map_skin {RETRO, COLOR, EMOJI, COLOR_EMOJI};
+
+char GAME_MESSAGE[256] = {0};
 
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////  STRUCTS  //////////////////////////////////
@@ -56,6 +60,7 @@ struct board_tile {
     enum tile_type type;  // The type of piece it is (water, bank, etc.)
     int occupied;         // TRUE or FALSE based on if Frogger is there.
     struct bug_node* bug; // POINTER or NULL based on if Bug is there.
+    int food_timer;       // To ensure the food will only last for 3 turns.
 };
 
 struct bug_node {
@@ -76,7 +81,7 @@ int is_placeable(int row, int col);
 void place_turtles(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
 void add_log(struct board_tile board[SIZE][SIZE], int turtle_row[SIZE]);
 void add_bug(struct board_tile board[SIZE][SIZE], struct bug_node** bug_linked_list);
-void clear_row(struct board_tile board[SIZE][SIZE], int last_coordinate[2], struct bug_node** bug_linked_list);
+void clear_row(struct board_tile board[SIZE][SIZE], int last_coordinate[2], struct bug_node** bug_linked_list, int turtle_row[SIZE]);
 void remove_log(struct board_tile board[SIZE][SIZE], int last_coordinate[2], struct bug_node** bug_linked_list);
 void move_frogger(struct board_tile board[SIZE][SIZE], char command, int last_coordinate[2]);
 void move_bug(struct board_tile board[SIZE][SIZE], struct bug_node* bug_linked_list);
@@ -88,8 +93,13 @@ void print_board(struct board_tile board[SIZE][SIZE], enum map_skin selected_ski
 void print_tile(struct board_tile tile, enum map_skin selected_skin);
 struct bug_node* create_bug_node(struct bug_node** bug_linked_list, int x, int y);
 void remove_bug_node(struct bug_node** bug_linked_list, struct bug_node* to_be_removed);
+void add_food(struct board_tile board[SIZE][SIZE]);
+void food_timer(struct board_tile board[SIZE][SIZE]);
+void food_superpowers(struct board_tile board[SIZE][SIZE], int last_coordinate[2], int *lives);
 void show_help();
 void clear_screen();
+void shout(const char* format, ...);
+void print_message();
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////  FUNCTION IMPLEMENTATIONS  //////////////////////////
@@ -97,6 +107,7 @@ void clear_screen();
 
 int main(void) {
     setlocale(LC_ALL, "");
+    srand(time(NULL));
 
     printf("Welcome to Frogger Game!\n");
     struct board_tile game_board[SIZE][SIZE];
@@ -105,6 +116,7 @@ int main(void) {
     int turtle_row[SIZE] = {FALSE}; // dictionary to help us indicate if certain row has a turtle for O(1) lookup
     int last_coordinate[2] = {BANK_ROW, SIZE / 2}; // (x, y)
     enum map_skin selected_skin = RETRO;
+    int frogger_moved = FALSE; //Frogger at the start of the game has not moved yet.
 
     init_board(game_board);
     select_skin(&selected_skin);
@@ -127,7 +139,7 @@ int main(void) {
                 add_log(game_board, turtle_row);
                 break;
             case 'c':
-                clear_row(game_board, last_coordinate, &bug_linked_list);
+                clear_row(game_board, last_coordinate, &bug_linked_list, turtle_row);
                 break;
             case 'r':
                 remove_log(game_board, last_coordinate, &bug_linked_list);
@@ -139,10 +151,11 @@ int main(void) {
             case 'w':
             case 's':
             case 'd':
+                frogger_moved = TRUE;
                 move_frogger(game_board, command, last_coordinate);
                 move_bug(game_board, bug_linked_list);
                 lives = check_winning_condition(game_board, last_coordinate, lives, selected_skin);
-                continue;
+                break;
             case 'h':
                 while (getchar() != '\n');
                 clear_screen();
@@ -158,12 +171,18 @@ int main(void) {
                 printf("Invalid command!\n");
                 continue;
         }
+        if (frogger_moved == TRUE) {
+            add_food(game_board);
+            food_timer(game_board);
+            food_superpowers(game_board, last_coordinate, &lives);
+        }
         clear_screen();
         print_board(game_board, selected_skin);
+        print_message();
     }
 
     if (lives == DEAD) {
-        printf("\n!! GAME OVER !!\n");
+        printf("!! GAME OVER !!\n");
     } else if (lives == GAME_WON) {
         printf("Wahoo!! You Won!\n");
     }
@@ -268,7 +287,7 @@ void add_log(
     scanf("%d %d %d", &row, &start_col, &end_col);
 
     if (start_col > end_col) {
-        printf("Invalid input! [start_col] must be less or equal than [end_col]!\n");
+        shout("Invalid input! [start_col] must be less or equal than [end_col]!\n");
         return;
     }
 
@@ -307,7 +326,8 @@ void add_bug(
 void clear_row(
     struct board_tile board[SIZE][SIZE],
     int last_coordinate[2],
-    struct bug_node** bug_linked_list
+    struct bug_node** bug_linked_list,
+    int turtle_row[SIZE]
 ) {
     int row;
     printf("Enter row to clear: ");
@@ -315,13 +335,13 @@ void clear_row(
 
     // Check if row is out of bounds OR prohibited (LILLYPAD or BANK row)
     if (is_placeable(row, LEFT_COLUMN) == FALSE) {
-        printf("Error: Row must be between %d and %d.\n", LILLYPAD_ROW + 1, BANK_ROW - 1);
+        shout("Error: Row must be between %d and %d.\n", LILLYPAD_ROW + 1, BANK_ROW - 1);
         return;
     }
 
     // Check if Frogger is on the row
     if (last_coordinate[X] == row) {
-        printf("Error: Cannot clear row %d because Frogger is present.\n", row);
+        shout("Error: Cannot clear row %d because Frogger is present.\n", row);
         return;
     }
 
@@ -335,7 +355,8 @@ void clear_row(
             board[row][col].bug = NULL;
         }
     }
-    printf("Row %d cleared.\n", row);
+    turtle_row[row] = FALSE;
+    shout("Row %d cleared.\n", row);
 }
 
 void remove_log(
@@ -349,7 +370,7 @@ void remove_log(
 
     //Tile that is not log tile will not be changed.
     if (board[row][col].type != LOG)  {
-        printf("There is no log to remove at row %d and column %d.\n", row, col);
+        shout("There is no log to remove at row %d and column %d.\n", row, col);
         return;
     }
 
@@ -374,7 +395,7 @@ void remove_log(
 
     //To remove logs if Frogger is not present on any adjacent logs.
     if (frogger_present == TRUE) {
-        printf("Cannot remove logs as a Frogger is present on an adjacent log.\n");
+        shout("Cannot remove logs as a Frogger is present on an adjacent log.\n");
     } else {
         int removal = z;
         while (removal <= y) {
@@ -385,7 +406,7 @@ void remove_log(
             }
             removal++;
         }
-        printf("Log(s) removed on row %d and column %d, and any logs adjacent to it.\n", row, col);
+        shout("Log(s) removed on row %d and column %d, and any logs adjacent to it.\n", row, col);
     }
 }
 
@@ -410,6 +431,69 @@ void move_frogger(
             break;
     }
     occupy(board, last_coordinate);
+}
+
+
+void add_food(struct board_tile board[SIZE][SIZE]) {
+    int food_count = 0;
+    int row = 0; //To check if the board has a food tile. If there are any, add 1 to the count.
+    while (row < SIZE) {
+        int col = 0;
+        while (col < SIZE) {
+            if (board[row][col].type == FOOD) {
+                food_count++;
+            }
+            col++;
+        }
+        row++;
+    }
+
+    //If from the checking above the board has 2 food tiles, do nothing.
+    if (food_count >= FOOD_LIMIT) {
+        return;
+    }
+    shout("Food has appeared! Hurry and eat them for superpowers!\n");
+    while (food_count < FOOD_LIMIT) {
+        int min_row = LILLYPAD_ROW + 1;
+        int max_row = BANK_ROW - 1;
+        int row = min_row + rand() % (max_row - min_row + 1);
+        int col = LEFT_COLUMN + rand() % (RIGHT_COLUMN - LEFT_COLUMN + 1);
+
+        if (board[row][col].type == WATER) //if the selected random tile is a water tile, change it to a food tile.
+        {
+            board[row][col].type = FOOD;
+            board[row][col].food_timer = 4; //Set the food timer to 4. The food will expire after 3 turns (beginning of 4th turn, the food is gone).
+            food_count++;
+        }
+    }
+}
+
+void food_timer(struct board_tile board[SIZE][SIZE]) {
+    int row = 0;
+    while (row < SIZE) {
+        int col = 0;
+        while (col < SIZE) { //To check for any food tile on the board.
+            if (board[row][col].type == FOOD) { //Should a food tile be found, the food timer will be reduced each turn.
+            board[row][col].food_timer--;
+                if (board[row][col].food_timer <= 0) { //Should the food timer be equal to 0, the food tile will be changed to water.
+                board[row][col].type = WATER;
+                }
+            }
+            col++;
+        }
+        row++;
+    }
+}
+
+void food_superpowers(
+    struct board_tile board[SIZE][SIZE],
+    int last_coordinate[2],
+    int *lives
+) {
+    if(board[last_coordinate[X]][last_coordinate[Y]].type == FOOD) {
+        *lives = (*lives)++;
+        shout("Congratulations! Frogger ate some food and felt rejuvenated. Total lives: %d\n", *lives);
+    }
 }
 
 int is_bug_moveable(
@@ -482,19 +566,14 @@ int check_winning_condition(
     if (tile.type == WATER) {
         lives--;
 
-
         if (lives == 0) //Should lives reach 0, player has lost the game (losing condition).
         {
-            clear_screen();
-            print_board(board, selected_skin);
             return 0;
         }
         else //If lives have not reached 0, reset Frogger position and print the game board to start again.
         {
-            clear_screen();
             reset_frogger(board, last_coordinate);
-            print_board(board, selected_skin);
-            printf("\nFrogger has fallen into the water! Remaining lives: %d\n\n", lives);
+            shout("Frogger has fallen into the water! Remaining lives: %d\n", lives);
             return lives;
         }
     }
@@ -505,16 +584,12 @@ int check_winning_condition(
 
         if (lives == 0) //Should lives reach 0, player has lost the game (losing condition).
         {
-            clear_screen();
-            print_board(board, selected_skin);
             return 0;
         }
         else //If lives have not reached 0, reset Frogger position and print the game board to start again.
         {
-            clear_screen();
             reset_frogger(board, last_coordinate);
-            print_board(board, selected_skin);
-            printf("\nOh no! Frogger hit a bug! Remaining lives: %d\n\n", lives);
+            shout("\nOh no! Frogger hit a bug! Remaining lives: %d\n\n", lives);
             return lives;
         }
     }
@@ -524,8 +599,6 @@ int check_winning_condition(
         return GAME_WON;
     }
 
-    clear_screen();
-    print_board(board, selected_skin);
     return lives;
 }
 
@@ -626,10 +699,10 @@ void remove_bug_node(
 ////////////////////////////// PROVIDED FUNCTIONS //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// order by enum {LILLYPAD, BANK, WATER, TURTLE, LOG, FROG, BUG};
-char tile_chars[] = { 'o', 'x', '~', 'T', 'L', 'F', 'B' };
-char* tile_colors[] = { GREEN_COLOR, RED_COLOR, BLUE_COLOR, YELLOW_COLOR, BROWN_COLOR, FROG_COLOR, RED_COLOR };
-wchar_t* tile_emojis[] = { L"🌸", L"🍀", L"💧", L"🐢", L"🪵 ", L"🐸", L"🐞" };
+// order by enum {LILLYPAD, BANK, WATER, TURTLE, LOG, FROG, BUG, FOOD};
+char tile_chars[] = { 'o', 'x', '~', 'T', 'L', 'F', 'B', 'Y' };
+char* tile_colors[] = { GREEN_COLOR, RED_COLOR, BLUE_COLOR, YELLOW_COLOR, BROWN_COLOR, FROG_COLOR, RED_COLOR, YELLOW_COLOR };
+wchar_t* tile_emojis[] = { L"🌸", L"🍀", L"💧", L"🐢", L"🪵 ", L"🐸", L"🐞", L"🍔" };
 
 void print_board(struct board_tile board[SIZE][SIZE], enum map_skin selected_skin) {
     for (int row = 0; row < SIZE; row++) {
@@ -681,4 +754,20 @@ void clear_screen() {
 #else
     system("clear");
 #endif
+}
+
+void shout(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vsnprintf(GAME_MESSAGE, sizeof(GAME_MESSAGE), format, args);
+    va_end(args);
+}
+
+void print_message() {
+    if (GAME_MESSAGE[0] != '\0') {
+        printf("\n%s\n", GAME_MESSAGE);
+        GAME_MESSAGE[0] = '\0'; // Flush the buffer by setting it to an empty string
+    } else {
+        printf("\n\n\n");
+    }
 }
