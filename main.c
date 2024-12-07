@@ -463,7 +463,10 @@ void add_food(struct board_tile board[SIZE][SIZE]) {
         if (board[row][col].type == WATER) //if the selected random tile is a water tile, change it to a food tile.
         {
             board[row][col].type = FOOD;
-            board[row][col].food_timer = FOOD_DURATION + 1; //Set the food timer to 4. The food will expire after 3 turns (beginning of 4th turn, the food is gone).
+            // Set the food timer to FOOD_DURATION + 1.
+            // The food will expire after FOOD_DURATION (default to 5) turns
+            // (beginning of 5th turn, the food is gone).
+            board[row][col].food_timer = FOOD_DURATION + 1;
             food_count++;
         }
     }
